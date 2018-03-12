@@ -1,0 +1,206 @@
+---
+swagger: "2.0"
+info:
+  description: "an S3 asset uploader API"
+  version: "1.0.0"
+  title: "S3 asset uploader REST API"
+  contact:
+    email: "bill.hongwu.chen@gmail.com"
+  license:
+    name: "Apache 2.0"
+    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
+host: "localhost:3000"
+basePath: "/v1"
+tags:
+- name: "asset"
+  description: "asset you will upload"
+schemes:
+- "http"
+- "https"
+consumes:
+- "application/json"
+produces:
+- "application/json"
+paths:
+  /asset:
+    post:
+      tags:
+      - "asset"
+      summary: "Create a s3 singed url for upload a new asset"
+      description: "Return the created asset object with a s3 signed url for upload"
+      operationId: "addAsset"
+      parameters: []
+      responses:
+        201:
+          description: "created successfully"
+          schema:
+            $ref: "#/definitions/Asset"
+        405:
+          description: "Invalid input"
+
+      x-swagger-router-controller: "Asset"
+    get:
+      tags:
+      - "asset"
+      summary: "Query asset by upload status"
+      description: "Returns a list of asset"
+      operationId: "getAssetListByStatus"
+      produces:
+      - "application/json"
+      parameters:
+      - name: "status"
+        in: "query"
+        description: "the Upload operation complete status of the asset"
+        required: false
+        type: "string"
+        enum:
+        - "pending"
+        - "uploaded"
+        - "failed"
+      responses:
+        200:
+          description: "successful query"
+          schema:
+            $ref: "#/definitions/AssetList"
+        405:
+          description: "Invalid input"
+      x-swagger-router-controller: "Asset"
+  /asset/{assetId}:
+    get:
+      tags:
+      - "asset"
+      summary: "Find asset by ID"
+      description: "Returns a asset object with a s3 signed url for upload "
+      operationId: "getAssetById"
+      parameters:
+      - name: "assetId"
+        in: "path"
+        description: "ID of asset to return"
+        required: true
+        type: "string"
+        format: "uuid"
+      - name: "timeout"
+        in: "query"
+        description: "timeout in seconds when the download url is still working. default\
+          \ is 60 seconds if not psecified."
+        required: false
+        type: "integer"
+        format: "int64"
+      responses:
+        200:
+          description: "successful find"
+          schema:
+            $ref: "#/definitions/Asset"
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Asset not found"
+      x-swagger-router-controller: "Asset"
+    put:
+      tags:
+      - "asset"
+      summary: "Mark the upload operation as complete"
+      description: ""
+      operationId: "updateAssetUploadStatus"
+      parameters:
+      - name: "assetId"
+        in: "path"
+        description: "ID of asset that needs to be updated"
+        required: true
+        type: "string"
+        format: "uuid"
+      - in: "body"
+        name: "body"
+        description: "Upload operation complete status of the asset"
+        required: true
+        schema:
+          $ref: "#/definitions/AssetStatus"
+      responses:
+        200:
+          description: "successfully updated the asset's upload status"
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Asset not found"
+        405:
+          description: "Invalid input"
+      x-swagger-router-controller: "Asset"
+    delete:
+      tags:
+      - "asset"
+      summary: "Deletes an asset"
+      description: "remove an asset from database"
+      operationId: "deleteAsset"
+      parameters:
+      - name: "assetId"
+        in: "path"
+        description: "asset id to delete"
+        required: true
+        type: "string"
+        format: "uuid"
+      responses:
+        204:
+          description: "successfully deleted the asset"
+        400:
+          description: "Invalid ID supplied"
+        404:
+          description: "Asset not found"
+      x-swagger-router-controller: "Asset"
+definitions:
+  Asset:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        description: "UUID of asset"
+      upload_url:
+        type: "string"
+        description: "A s3 signed url for upload"
+      download_url:
+        type: "string"
+        description: "A s3 signed url for download"
+      timeout:
+        type: "integer"
+        format: "int32"
+        description: "timeout in seconds when the download url is still working. default\
+          \ is 60 seconds if not psecified."
+      status:
+        type: "string"
+        description: "The status of file upload operation to s3"
+        enum:
+        - "pending"
+        - "uploaded"
+        - "failed"
+      created:
+        type: "string"
+        format: "date-time"
+        description: "created timestamp of the asset"
+  AssetList:
+    type: "array"
+    items:
+      $ref: "#/definitions/AssetStatus"
+  AssetStatus:
+    type: "object"
+    properties:
+      id:
+        type: "string"
+        format: "uuid"
+        description: "UUID of asset"
+      status:
+        type: "string"
+        description: "The status of file upload operation to s3"
+        enum:
+        - "pending"
+        - "uploaded"
+        - "failed"
+  ApiResponse:
+    type: "object"
+    properties:
+      code:
+        type: "integer"
+        format: "int32"
+      type:
+        type: "string"
+      message:
+        type: "string"
